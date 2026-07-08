@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - VIT RideShare</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <div class="logo">VIT RideShare</div>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="register.html">Register</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h2>Register for RideShare</h2>
+        <form id="cabForm">
+
+            <label>Name:</label>
+            <input type="text" id="name" required>
+
+            <label>Gender:</label>
+            <select id="gender">
+                <option>Male</option>
+                <option>Female</option>
+            </select>
+
+            <label>Register Number:</label>
+            <input type="text" id="reg_no" required>
+
+            <label>Phone:</label>
+            <input type="text" id="phone" required>
+
+            <label>VIT Email:</label>
+            <input type="email" id="vit_mail" required>
+
+            <label>Date of Travel:</label>
+            <input type="date" id="date" required>
+
+            <label>Start Time:</label>
+            <select id="start_time" required></select>
+
+            <label>End Time:</label>
+            <select id="end_time" required></select>
+
+            <label>From:</label>
+            <select id="from_location" required></select>
+
+            <label>To:</label>
+            <select id="to_location" required></select>
+
+            <label>Max People to Share:</label>
+            <input type="number" id="max_people" min="1" required>
+
+            <label>Willing to Share with Opposite Gender?</label>
+            <select id="share_opposite_gender">
+                <option>Yes</option>
+                <option>No</option>
+            </select>
+
+            <input type="submit" value="Submit">
+
+        </form>
+    </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    
+    // ✅ TIME DROPDOWN (30 min interval)
+    function fillTimeDropdown(selectId) {
+        const dropdown = document.getElementById(selectId);
+        for (let h = 0; h < 24; h++) {
+            for (let m of ["00", "30"]) {
+                let time = 
+                    String(h).padStart(2, "0") + ":" + m;
+                let opt = document.createElement("option");
+                opt.value = time;
+                opt.textContent = time;
+                dropdown.appendChild(opt);
+            }
+        }
+    }
+    fillTimeDropdown("start_time");
+    fillTimeDropdown("end_time");
+
+    // ✅ LOCATION DROPDOWN
+    const places = [
+        "Chennai International Airport",
+        "Koyambedu Bus Stand",
+        "MGR Central Railway Station",
+        "Tambaram Railway Station",
+        "Egmore Station",
+        "Kilambakkam Bus Stand",
+        "Vandalur",
+        "VIT"
+    ];
+
+    function loadPlaces(id) {
+        const box = document.getElementById(id);
+        places.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p;
+            opt.textContent = p;
+            box.appendChild(opt);
+        });
+    }
+    loadPlaces("from_location");
+    loadPlaces("to_location");
+
+    // ✅ FORM VALIDATION + SUBMIT
+    const form = document.getElementById('cabForm');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const reg_no = document.getElementById('reg_no').value;
+        const phone = document.getElementById('phone').value;
+        const mail = document.getElementById('vit_mail').value;
+        const dateVal = document.getElementById('date').value;
+        const start = document.getElementById('start_time').value;
+        const end = document.getElementById('end_time').value;
+        const from = document.getElementById('from_location').value;
+        const to = document.getElementById('to_location').value;
+
+        // ✅ Register number check: NNLLLNNNN
+        const regPattern = /^[0-9]{2}[A-Za-z]{3}[0-9]{4}$/;
+        if (!regPattern.test(reg_no)) {
+            alert("Register No must be like 23BEL1024 (2 digits + 3 letters + 4 digits)");
+            return;
+        }
+
+        // ✅ Phone must be exactly 10 digits
+        if (!/^[0-9]{10}$/.test(phone)) {
+            alert("Phone number MUST be exactly 10 digits.");
+            return;
+        }
+
+        // ✅ Email must end with @vitstudent.ac.in
+        if (!mail.endsWith("@vitstudent.ac.in")) {
+            alert("Email must be a valid VIT student mail (example: gopika.v2023@vitstudent.ac.in)");
+            return;
+        }
+
+        // ✅ Travel date must be today or in future
+        let today = new Date().toISOString().split("T")[0];
+        if (dateVal < today) {
+            alert("Travel date cannot be in the past!");
+            return;
+        }
+
+        // ✅ Start < End
+        if (start >= end) {
+            alert("Start time must be earlier than end time.");
+            return;
+        }
+
+        // ✅ One of From/To must be VIT
+        if (from !== "VIT" && to !== "VIT") {
+            alert("Either FROM or TO must be VIT.");
+            return;
+        }
+
+        // ✅ From and To cannot be same
+        if (from === to) {
+            alert("FROM and TO cannot be the same.");
+            return;
+        }
+
+        // ✅ Construct Form Data
+        const formData = {
+            name: document.getElementById('name').value,
+            gender: document.getElementById('gender').value,
+            reg_no,
+            phone,
+            vit_mail: mail,
+            travel_date: dateVal,
+            start_time: start,
+            end_time: end,
+            from_location: from,
+            to_location: to,
+            max_people: document.getElementById('max_people').value,
+            share_opposite_gender: document.getElementById('share_opposite_gender').value
+        };
+
+        // ✅ Submit to Backend
+        try {
+            const res = await fetch('http://127.0.0.1:5000/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await res.json();
+            alert(data.message || 'Registered successfully!');
+        } catch (err) {
+            alert("Server not reachable! Start Flask backend first.");
+        }
+    });
+});
+</script>
+
+</body>
+</html>
